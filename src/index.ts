@@ -1,81 +1,62 @@
-import Discord, { Channel } from 'discord.js';
+import Discord, { DMChannel } from 'discord.js';
+import Commands from './commands';
+import { ICommand } from './commands/types';
+import { PREFIX } from './constants';
+
+import onVoiceStateUpdate from './features/voiceTextLinking';
 
 require('dotenv').config();
 
 const client = new Discord.Client();
+const commands = new Discord.Collection<string, ICommand>();
 
-const BOT_NAME = 'RekichoLand-bot';
+Object.entries(Commands).forEach(([, command]) => {
+  commands.set(command.name, command);
+});
 
-const cleanName = (name: string | undefined) => (name ? name.replace('#', '').replace(' ', '-').toLowerCase() : undefined);
+client.on('voiceStateUpdate', onVoiceStateUpdate);
 
-const onJoinChannel = async (newState: Discord.VoiceState) => {
-  let channelRole;
-  const name = `${cleanName(newState.channel?.name)}-text`;
-  // User is first to join channel
-  if (newState.channel?.members.size === 1) {
-    channelRole = await newState.guild.roles.create({
-      reason: 'role to access text chat',
-      data: {
-        name,
-      },
-    });
-    const botRole = newState.guild.roles.cache.find(
-      (role) => role.name === BOT_NAME,
-    );
+client.on('message', (message) => {
+  if (!message.content.startsWith(PREFIX) || message.author.bot) return;
 
-    const permissionOverwrites:
-    | Discord.OverwriteResolvable[]
-    | Discord.Collection<string, Discord.OverwriteResolvable>
-    | undefined = [
-      { id: newState.channel.guild.roles.everyone, deny: 'VIEW_CHANNEL' },
-      { id: channelRole, allow: 'VIEW_CHANNEL' },
-    ];
+  const args = message.content.slice(PREFIX.length).trim().split(/ +/);
+  const commandName = args?.shift()?.toLowerCase();
 
-    if (botRole) permissionOverwrites.push({ id: botRole, allow: 'VIEW_CHANNEL' });
+  if (commandName === undefined) return;
 
-    newState.guild.channels.create(name, {
-      reason: 'Voice exclusive text chat',
-      parent: newState.channel.parent as Channel,
-      permissionOverwrites,
-    });
-  } else {
-    channelRole = newState.guild.roles.cache.find((role) => role.name === name);
+  const command = commands.get(commandName)
+    || commands.find((cmd) => (cmd.aliases ? cmd.aliases.includes(commandName) : false));
+
+  if (!command) return;
+
+  if (command?.guildOnly && message.channel.type === 'dm') {
+    message.reply("I can't execute that command inside DMs!");
+    return;
   }
 
-  if (channelRole) newState.member?.roles.add(channelRole);
-};
-
-const onLeaveChannel = async (oldState: Discord.VoiceState) => {
-  const name = `${cleanName(oldState.channel?.name)}-text`;
-  const channelRole = oldState.guild.roles.cache.find(
-    (role) => role.name === name,
-  );
-  if (channelRole) await oldState.member?.roles.remove(channelRole);
-  //  Channel is now empty
-  if (oldState.channel?.members.size === 0) {
-    await channelRole?.delete();
-    const textChannel = oldState.guild.channels.cache.find(
-      (channel) => channel.name === name && channel.isText(),
-    );
-    await textChannel?.delete();
+  if (command?.permissions && !(message.channel instanceof DMChannel)) {
+    const authorPerms = message.channel.permissionsFor(message.author);
+    if (!authorPerms || !authorPerms.has(command.permissions)) {
+      message.reply('You can not do this!');
+      return;
+    }
   }
-};
 
-const onChangeChannel = async (
-  oldState: Discord.VoiceState,
-  newState: Discord.VoiceState,
-) => {
-  await onLeaveChannel(oldState);
-  onJoinChannel(newState);
-};
+  if (command?.args && !args.length) {
+    let reply = "You didn't provide any arguments!";
 
-client.on('voiceStateUpdate', async (oldState, newState) => {
-  if (newState.channelID === null) {
-    onLeaveChannel(oldState);
-  } else if (oldState.channelID === null) {
-    onJoinChannel(newState);
-  } else if (oldState.channelID !== newState.channelID) {
-    onChangeChannel(oldState, newState);
+    if (command.usage) {
+      reply += `\nThe proper usage would be: \`${PREFIX} ${command.name} ${command.usage}\``;
+    }
+
+    message.reply(reply);
+    return;
+  }
+
+  try {
+    command?.execute(message, args);
+  } catch (error) {
+    message.reply("Sorry, I couldn't fulfill this command!");
   }
 });
 
