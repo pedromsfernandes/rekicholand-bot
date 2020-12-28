@@ -1,3 +1,5 @@
 .env
+.env_database
 node_modules/
 dist/
+ormconfig.json

@@ -1,63 +1,76 @@
 import Discord, { DMChannel } from 'discord.js';
+import { createConnection } from 'typeorm';
+
 import Commands from './commands';
 import { ICommand } from './commands/types';
 import { PREFIX } from './constants';
+import { onReactionAdd, onReactionRemove } from './features/reactionRoles';
 
 import onVoiceStateUpdate from './features/voiceTextLinking';
 
 require('dotenv').config();
 
-const client = new Discord.Client();
-const commands = new Discord.Collection<string, ICommand>();
+const main = async () => {
+  await createConnection();
 
-Object.entries(Commands).forEach(([, command]) => {
-  commands.set(command.name, command);
-});
+  const client = new Discord.Client();
+  const commands = new Discord.Collection<string, ICommand>();
 
-client.on('voiceStateUpdate', onVoiceStateUpdate);
+  Object.entries(Commands).forEach(([, command]) => {
+    commands.set(command.name, command);
+  });
 
-client.on('message', (message) => {
-  if (!message.content.startsWith(PREFIX) || message.author.bot) return;
+  client.on('voiceStateUpdate', onVoiceStateUpdate);
 
-  const args = message.content.slice(PREFIX.length).trim().split(/ +/);
-  const commandName = args?.shift()?.toLowerCase();
+  client.on('messageReactionAdd', onReactionAdd);
 
-  if (commandName === undefined) return;
+  client.on('messageReactionRemove', onReactionRemove);
 
-  const command = commands.get(commandName)
-    || commands.find((cmd) => (cmd.aliases ? cmd.aliases.includes(commandName) : false));
+  client.on('message', (message) => {
+    if (!message.content.startsWith(PREFIX) || message.author.bot) return;
 
-  if (!command) return;
+    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
+    const commandName = args?.shift()?.toLowerCase();
 
-  if (command?.guildOnly && message.channel.type === 'dm') {
-    message.reply("I can't execute that command inside DMs!");
-    return;
-  }
+    if (commandName === undefined) return;
 
-  if (command?.permissions && !(message.channel instanceof DMChannel)) {
-    const authorPerms = message.channel.permissionsFor(message.author);
-    if (!authorPerms || !authorPerms.has(command.permissions)) {
-      message.reply('You can not do this!');
+    const command = commands.get(commandName)
+      || commands.find((cmd) => (cmd.aliases ? cmd.aliases.includes(commandName) : false));
+
+    if (!command) return;
+
+    if (command?.guildOnly && message.channel.type === 'dm') {
+      message.reply("I can't execute that command inside DMs!");
       return;
     }
-  }
 
-  if (command?.args && !args.length) {
-    let reply = "You didn't provide any arguments!";
-
-    if (command.usage) {
-      reply += `\nThe proper usage would be: \`${PREFIX} ${command.name} ${command.usage}\``;
+    if (command?.permissions && !(message.channel instanceof DMChannel)) {
+      const authorPerms = message.channel.permissionsFor(message.author);
+      if (!authorPerms || !authorPerms.has(command.permissions)) {
+        message.reply('You can not do this!');
+        return;
+      }
     }
 
-    message.reply(reply);
-    return;
-  }
+    if (command?.args && !args.length) {
+      let reply = "You didn't provide any arguments!";
 
-  try {
-    command?.execute(message, args);
-  } catch (error) {
-    message.reply("Sorry, I couldn't fulfill this command!");
-  }
-});
+      if (command.usage) {
+        reply += `\nThe proper usage would be: \`${PREFIX} ${command.name} ${command.usage}\``;
+      }
 
-client.login(process.env.CLIENT_TOKEN);
+      message.reply(reply);
+      return;
+    }
+
+    try {
+      command?.execute(message, args);
+    } catch (error) {
+      message.reply("Sorry, I couldn't fulfill this command!");
+    }
+  });
+
+  client.login(process.env.CLIENT_TOKEN);
+};
+
+main();

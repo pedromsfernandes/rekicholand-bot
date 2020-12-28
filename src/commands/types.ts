@@ -8,6 +8,7 @@ export interface ICommand {
   guildOnly: boolean;
   permissions: PermissionString;
   aliases?: string[];
-  subCommands: Discord.Collection<string, ICommand>;
+  subCommands?: Discord.Collection<string, ICommand>;
+  init?: () => void;
   execute: (message: Discord.Message, args: string[]) => void;
 }

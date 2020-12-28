@@ -1,0 +1,18 @@
+version: "3.3"
+
+services:
+  postgres:
+    image: postgres:13.0
+    env_file: 
+      - ./.env_database
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    env_file: 
+      - ./.env_database
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
