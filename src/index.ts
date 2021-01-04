@@ -1,19 +1,25 @@
-import Discord, { DMChannel, TextChannel } from 'discord.js';
-import { createConnection } from 'typeorm';
-import stringArgv from 'string-argv';
+import Discord, { DMChannel, TextChannel } from "discord.js";
+import { createConnection } from "typeorm";
+import stringArgv from "string-argv";
 
-import Commands from './commands';
-import { ICommand } from './commands/types';
-import { PREFIX } from './constants';
-import { onReactionAdd, onReactionRemove } from './features/reactionRoles';
+import Commands from "./commands";
+import { ICommand } from "./commands/types";
+import { PREFIX, PROD } from "./constants";
+import { onReactionAdd, onReactionRemove } from "./features/reactionRoles";
 
-import onVoiceStateUpdate from './features/voiceTextLinking';
-import Message from './entities/Message';
+import onVoiceStateUpdate from "./features/voiceTextLinking";
+import Message from "./entities/Message";
+import Role from "./entities/Role";
 
-require('dotenv').config();
+require("dotenv").config();
 
 const main = async () => {
-  await createConnection();
+  await createConnection({
+    type: "postgres",
+    url: process.env.DATABASE_URL,   
+    synchronize: !PROD,
+    entities: [Message, Role],
+  });
 
   const client = new Discord.Client();
   const commands = new Discord.Collection<string, ICommand>();
@@ -22,9 +28,9 @@ const main = async () => {
     commands.set(command.name, command);
   });
 
-  client.once('ready', async () => {
+  client.once("ready", async () => {
     const rolesMessages = await Message.find({
-      where: { type: 'reaction-roles' },
+      where: { type: "reaction-roles" },
     });
 
     rolesMessages.forEach(async (message) => {
@@ -34,13 +40,13 @@ const main = async () => {
     });
   });
 
-  client.on('voiceStateUpdate', onVoiceStateUpdate);
+  client.on("voiceStateUpdate", onVoiceStateUpdate);
 
-  client.on('messageReactionAdd', onReactionAdd);
+  client.on("messageReactionAdd", onReactionAdd);
 
-  client.on('messageReactionRemove', onReactionRemove);
+  client.on("messageReactionRemove", onReactionRemove);
 
-  client.on('message', (message) => {
+  client.on("message", (message) => {
     if (!message.content.startsWith(PREFIX) || message.author.bot) return;
 
     const args = stringArgv(message.content.slice(PREFIX.length).trim());
@@ -48,12 +54,15 @@ const main = async () => {
 
     if (commandName === undefined) return;
 
-    const command = commands.get(commandName)
-      || commands.find((cmd) => (cmd.aliases ? cmd.aliases.includes(commandName) : false));
+    const command =
+      commands.get(commandName) ||
+      commands.find((cmd) =>
+        cmd.aliases ? cmd.aliases.includes(commandName) : false
+      );
 
     if (!command) return;
 
-    if (command?.guildOnly && message.channel.type === 'dm') {
+    if (command?.guildOnly && message.channel.type === "dm") {
       message.reply("I can't execute that command inside DMs!");
       return;
     }
@@ -61,7 +70,7 @@ const main = async () => {
     if (command?.permissions && !(message.channel instanceof DMChannel)) {
       const authorPerms = message.channel.permissionsFor(message.author);
       if (!authorPerms || !authorPerms.has(command.permissions)) {
-        message.reply('You can not do this!');
+        message.reply("You can not do this!");
         return;
       }
     }
