@@ -19,6 +19,7 @@ const main = async () => {
     url: process.env.DATABASE_URL,
     synchronize: !PROD,
     entities: [Message, Role],
+    ssl: { rejectUnauthorized: false },
     extra: {
       ssl: PROD,
     },
@@ -32,7 +33,7 @@ const main = async () => {
   });
 
   client.once("ready", async () => {
-    const rolesMessages = await Message.find({ 
+    const rolesMessages = await Message.find({
       where: { type: "reaction-roles" },
     });
 
