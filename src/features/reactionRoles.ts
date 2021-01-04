@@ -6,7 +6,12 @@ const addReactionRole = async (
   messageReaction: MessageReaction,
   user: User | PartialUser,
 ) => {
-  const rolesMessage = await Message.find({ dId: messageReaction.message.id });
+  if (user.bot) return;
+
+  const rolesMessage = await Message.find({
+    dId: messageReaction.message.id,
+    type: 'reaction-roles',
+  });
 
   if (rolesMessage) {
     const role = await Role.findOne({ emoji: messageReaction.emoji.name });
@@ -28,7 +33,12 @@ const removeReactionRole = async (
   messageReaction: MessageReaction,
   user: User | PartialUser,
 ) => {
-  const rolesMessage = await Message.find({ dId: messageReaction.message.id });
+  if (user.bot) return;
+
+  const rolesMessage = await Message.find({
+    dId: messageReaction.message.id,
+    type: 'reaction-roles',
+  });
 
   if (rolesMessage) {
     const role = await Role.findOne({ emoji: messageReaction.emoji.name });

@@ -1,4 +1,4 @@
-import Discord, { DMChannel } from 'discord.js';
+import Discord, { DMChannel, TextChannel } from 'discord.js';
 import { createConnection } from 'typeorm';
 import stringArgv from 'string-argv';
 
@@ -8,6 +8,7 @@ import { PREFIX } from './constants';
 import { onReactionAdd, onReactionRemove } from './features/reactionRoles';
 
 import onVoiceStateUpdate from './features/voiceTextLinking';
+import Message from './entities/Message';
 
 require('dotenv').config();
 
@@ -19,6 +20,18 @@ const main = async () => {
 
   Object.entries(Commands).forEach(([, command]) => {
     commands.set(command.name, command);
+  });
+
+  client.once('ready', async () => {
+    const rolesMessages = await Message.find({
+      where: { type: 'reaction-roles' },
+    });
+
+    rolesMessages.forEach(async (message) => {
+      const guild = await client.guilds.fetch(message.guild);
+      const channel = guild.channels.cache.get(message.channel) as TextChannel;
+      channel.messages.fetch(message.dId);
+    });
   });
 
   client.on('voiceStateUpdate', onVoiceStateUpdate);

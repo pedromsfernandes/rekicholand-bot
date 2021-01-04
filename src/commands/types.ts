@@ -4,11 +4,10 @@ export interface ICommand {
   name: string;
   description: string;
   args: boolean;
-  usage: string;
+  usage?: string;
   guildOnly: boolean;
-  permissions: PermissionString;
+  permissions?: PermissionString;
   aliases?: string[];
   subCommands?: Discord.Collection<string, ICommand>;
-  init?: () => void;
   execute: (message: Discord.Message, args: string[]) => void;
 }
