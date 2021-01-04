@@ -1,19 +1,20 @@
-import 'reflect-metadata';
-import Discord, { TextChannel } from 'discord.js';
-import { PREFIX } from '../constants';
-import { ICommand } from './types';
-import Role from '../entities/Role';
-import Message from '../entities/Message';
+import "reflect-metadata";
+import Discord, { TextChannel } from "discord.js";
+import { PREFIX } from "../constants";
+import { ICommand } from "./types";
+import Role from "../entities/Role";
+import Message from "../entities/Message";
 
 const AddRole: ICommand = {
-  name: 'add',
-  description: 'Add reaction role',
+  name: "add",
+  description: "Add reaction role",
   args: true,
-  usage: '<role> <emoji>',
+  usage: "<role> <emoji>",
   async execute(message, args) {
+    console.log(args);
     const [name, emoji] = args;
     const role = await message.guild?.roles.create({
-      reason: 'reaction role',
+      reason: "reaction role",
       data: {
         name,
       },
@@ -25,15 +26,15 @@ const AddRole: ICommand = {
       guild: message.guild?.id,
     }).save();
 
-    message.react('✅');
+    message.react("✅");
   },
 };
 
 const RemoveRole: ICommand = {
-  name: 'remove',
-  description: 'Remove reaction role',
+  name: "remove",
+  description: "Remove reaction role",
   args: true,
-  usage: '<role>',
+  usage: "<role>",
   async execute(message, args) {
     const [name] = args;
     const role = await Role.findOne({
@@ -47,39 +48,73 @@ const RemoveRole: ICommand = {
       dRole?.delete();
       role?.remove();
 
-      message.react('✅');
+      message.react("✅");
     }
   },
 };
 
 const PublishRoles: ICommand = {
-  name: 'publish',
-  description: 'Publish message with reaction roles',
+  name: "publish",
+  description: "Publish message with reaction roles",
   args: true,
-  usage: '<channel_name>',
+  usage: "<channel_name>",
   async execute(message, args) {
     const [name] = args;
     const targetChannel = message.guild?.channels.cache.find(
-      (channel) => channel.name === name,
+      (channel) => channel.name === name
     ) as TextChannel;
 
     const roles = await Role.find({ guild: message.guild?.id });
     const rolesStr = roles
       .map((role) => `${role.emoji} - ${role.name}`)
-      .join('\n');
+      .join("\n");
 
     const rolesMessage = await targetChannel.send(
-      `Hey! In the following lines, you'll see a list of emojis and roles. Be sure to react with the appropriate emojis if you want to be given their roles!\n\n${rolesStr}`,
+      `Hey! In the following lines, you'll see a list of emojis and roles. Be sure to react with the appropriate emojis if you want to be given their roles!\n\n${rolesStr}`
     );
 
     await Message.create({
       dId: rolesMessage.id,
       channel: targetChannel.id,
       guild: message.guild?.id,
-      type: 'reaction-roles',
+      type: "reaction-roles",
     }).save();
 
     // targetChannel.messages.fetch();
+  },
+};
+
+const ListRoles: ICommand = {
+  name: "list",
+  aliases: ["ls"],
+  description: "List reaction roles",
+  args: false,
+  async execute(message) {
+    const roles = await Role.find({ guild: message.guild?.id });
+
+    if (roles.length === 0) {
+      await message.reply("There are no reaction roles!");
+      return;
+    }
+
+    const rolesStr = roles
+      .map((role) => `${role.emoji} - ${role.name}`)
+      .join("\n");
+
+    await message.reply(
+      `Here's a list of current reaction roles:\n\n${rolesStr}`
+    );
+  },
+};
+
+const ResetRoles: ICommand = {
+  name: "reset",
+  description: "Reset reaction roles",
+  args: false,
+  async execute(message) {
+    const roles = await Role.find({ guild: message.guild?.id });
+    await Role.remove(roles);
+    message.react("✅");
   },
 };
 
@@ -87,26 +122,31 @@ const Commands = {
   AddRole,
   RemoveRole,
   PublishRoles,
+  ListRoles,
+  ResetRoles,
 };
 
 const ReactionRoles: ICommand = {
-  name: 'reaction-roles',
-  aliases: ['rr'],
-  description: 'Reaction Roles',
+  name: "reaction-roles",
+  aliases: ["rr"],
+  description: "Reaction Roles",
   guildOnly: true,
   args: true,
-  usage: 'Hello',
-  permissions: 'ADMINISTRATOR',
+  usage: "Hello",
+  permissions: "ADMINISTRATOR",
   subCommands: new Discord.Collection<string, ICommand>(
-    Object.values(Commands).map((command) => [command.name, command]),
+    Object.values(Commands).map((command) => [command.name, command])
   ),
   execute(message, args) {
-    console.log('Hey!');
+    console.log("Hey!");
     const commandName = args?.shift()?.toLowerCase();
     if (commandName === undefined) return;
 
-    const command = this.subCommands!.get(commandName)
-      || this.subCommands!.find((cmd) => (cmd.aliases ? cmd.aliases.includes(commandName) : false));
+    const command =
+      this.subCommands!.get(commandName) ||
+      this.subCommands!.find((cmd) =>
+        cmd.aliases ? cmd.aliases.includes(commandName) : false
+      );
 
     if (!command) return;
 

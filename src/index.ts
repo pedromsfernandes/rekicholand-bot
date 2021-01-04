@@ -1,5 +1,6 @@
 import Discord, { DMChannel } from 'discord.js';
 import { createConnection } from 'typeorm';
+import stringArgv from 'string-argv';
 
 import Commands from './commands';
 import { ICommand } from './commands/types';
@@ -29,7 +30,7 @@ const main = async () => {
   client.on('message', (message) => {
     if (!message.content.startsWith(PREFIX) || message.author.bot) return;
 
-    const args = message.content.slice(PREFIX.length).trim().split(/ +/);
+    const args = stringArgv(message.content.slice(PREFIX.length).trim());
     const commandName = args?.shift()?.toLowerCase();
 
     if (commandName === undefined) return;
