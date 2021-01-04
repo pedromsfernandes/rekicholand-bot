@@ -16,9 +16,12 @@ require("dotenv").config();
 const main = async () => {
   await createConnection({
     type: "postgres",
-    url: process.env.DATABASE_URL,   
+    url: process.env.DATABASE_URL,
     synchronize: !PROD,
     entities: [Message, Role],
+    extra: {
+      ssl: PROD,
+    },
   });
 
   const client = new Discord.Client();
@@ -29,7 +32,7 @@ const main = async () => {
   });
 
   client.once("ready", async () => {
-    const rolesMessages = await Message.find({
+    const rolesMessages = await Message.find({ 
       where: { type: "reaction-roles" },
     });
 
