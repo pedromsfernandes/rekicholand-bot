@@ -14,18 +14,19 @@ import Role from "./entities/Role";
 require("dotenv").config();
 
 const main = async () => {
-  await createConnection({
+  const conn = await createConnection({
     type: "postgres",
     url: process.env.DATABASE_URL,
     synchronize: !PROD,
     entities: [Message, Role],
   });
+  await conn.runMigrations();
 
   const client = new Discord.Client();
   const commands = new Discord.Collection<string, ICommand>();
 
   Object.entries(Commands).forEach(([, command]) => {
-    commands.set(command.name, command);
+    commands.set(command.name, command); 
   });
 
   client.once("ready", async () => {
