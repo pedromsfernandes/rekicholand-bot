@@ -11,6 +11,8 @@ import onVoiceStateUpdate from "./features/voiceTextLinking";
 import Message from "./entities/Message";
 import Role from "./entities/Role";
 
+import path from "path";
+
 require("dotenv").config();
 
 const main = async () => {
@@ -19,6 +21,7 @@ const main = async () => {
     url: process.env.DATABASE_URL,
     synchronize: !PROD,
     entities: [Message, Role],
+    migrations: PROD ? [path.join(__dirname, "./migrations/*")] : undefined,
   });
   await conn.runMigrations();
 
@@ -26,7 +29,7 @@ const main = async () => {
   const commands = new Discord.Collection<string, ICommand>();
 
   Object.entries(Commands).forEach(([, command]) => {
-    commands.set(command.name, command); 
+    commands.set(command.name, command);
   });
 
   client.once("ready", async () => {
