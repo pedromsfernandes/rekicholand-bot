@@ -19,10 +19,6 @@ const main = async () => {
     url: process.env.DATABASE_URL,
     synchronize: !PROD,
     entities: [Message, Role],
-    ssl: { rejectUnauthorized: false },
-    extra: {
-      ssl: PROD,
-    },
   });
 
   const client = new Discord.Client();
