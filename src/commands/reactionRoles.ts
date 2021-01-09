@@ -1,23 +1,23 @@
-import 'reflect-metadata';
-import Discord, { TextChannel } from 'discord.js';
-import { PREFIX } from '../constants';
-import { ICommand } from './types';
-import Role from '../entities/Role';
-import Message from '../entities/Message';
+import "reflect-metadata";
+import Discord, { TextChannel } from "discord.js";
+import { PREFIX } from "../constants";
+import { ICommand } from "./types";
+import Role from "../entities/Role";
+import Message from "../entities/Message"; 
 
 const updateRolesMessage = async (
   message: Discord.Message,
-  rolesMessage: Message,
+  rolesMessage: Message
 ) => {
   const roles = await Role.find({ guild: message.guild?.id });
   const rolesStr = roles
     .map((role) => `${role.emoji} - ${role.name}`)
-    .join('\n');
+    .join("\n");
 
   const messageStr = `Hey! In the following lines, you'll see a list of emojis and roles. Be sure to react with the appropriate emojis if you want to be given their roles!\n\n${rolesStr}`;
 
   const channel = (await message.client.channels.fetch(
-    rolesMessage.channel,
+    rolesMessage.channel
   )) as TextChannel;
   const mes = await channel.messages.fetch(rolesMessage.dId);
   await mes.edit(messageStr);
@@ -27,11 +27,11 @@ const updateRolesMessage = async (
 };
 
 const AddRole: ICommand = {
-  name: 'add',
-  description: 'Add reaction role',
+  name: "add",
+  description: "Add reaction role",
   args: true,
   guildOnly: true,
-  usage: '<role> <emoji>',
+  usage: "<role> <emoji>",
   async execute(message, args) {
     if (args.length !== 2) {
       message.reply(`You must provide exactly 2 arguments: ${this.usage}`);
@@ -47,12 +47,12 @@ const AddRole: ICommand = {
     });
 
     if (role) {
-      message.reply('That role already exists!');
+      message.reply("That role already exists!");
       return;
     }
 
     const newRole = await message.guild?.roles.create({
-      reason: 'reaction role',
+      reason: "reaction role",
       data: {
         name,
       },
@@ -67,7 +67,7 @@ const AddRole: ICommand = {
     const rolesMessage = await Message.findOne({
       where: {
         guild: message.guild?.id,
-        type: 'reaction-roles',
+        type: "reaction-roles",
       },
     });
 
@@ -75,17 +75,17 @@ const AddRole: ICommand = {
       await updateRolesMessage(message, rolesMessage);
     }
 
-    message.react('✅');
+    message.react("✅");
   },
 };
 
 const RemoveRole: ICommand = {
-  name: 'remove',
-  description: 'Remove reaction role',
-  aliases: ['rm'],
+  name: "remove",
+  description: "Remove reaction role",
+  aliases: ["rm"],
   args: true,
   guildOnly: true,
-  usage: '<role>',
+  usage: "<role>",
   async execute(message, args) {
     const [name] = args;
     const role = await Role.findOne({
@@ -102,48 +102,48 @@ const RemoveRole: ICommand = {
       const rolesMessage = await Message.findOne({
         where: {
           guild: message.guild?.id,
-          type: 'reaction-roles',
+          type: "reaction-roles",
         },
       });
 
       if (rolesMessage) {
         const channel = (await message.client.channels.fetch(
-          rolesMessage.channel,
+          rolesMessage.channel
         )) as TextChannel;
         const mes = await channel.messages.fetch(rolesMessage.dId);
         const reaction = mes.reactions.cache.find(
-          (react) => react.emoji.name === role.emoji,
+          (react) => react.emoji.name === role.emoji
         );
         reaction?.remove();
         await updateRolesMessage(message, rolesMessage);
       }
 
-      message.react('✅');
+      message.react("✅");
     }
   },
 };
 
 const PublishRoles: ICommand = {
-  name: 'publish',
-  description: 'Publish message with reaction roles',
+  name: "publish",
+  description: "Publish message with reaction roles",
   args: true,
   guildOnly: true,
-  usage: '<channel_name>',
+  usage: "<channel_name>",
   async execute(message, args) {
     const [name] = args;
     const targetChannel = message.guild?.channels.cache.find(
-      (channel) => channel.name === name,
+      (channel) => channel.name === name
     ) as TextChannel;
 
     if (!targetChannel) {
-      message.reply('That channel does not exist!');
+      message.reply("That channel does not exist!");
       return;
     }
 
     const roles = await Role.find({ guild: message.guild?.id });
     const rolesStr = roles
       .map((role) => `${role.emoji} - ${role.name}`)
-      .join('\n');
+      .join("\n");
 
     const messageStr = `Hey! In the following lines, you'll see a list of emojis and roles. Be sure to react with the appropriate emojis if you want to be given their roles!\n\n${rolesStr}`;
 
@@ -155,12 +155,12 @@ const PublishRoles: ICommand = {
     const rolesMessage = await Message.findOne({
       where: {
         guild: message.guild?.id,
-        type: 'reaction-roles',
+        type: "reaction-roles",
       },
     });
 
     if (rolesMessage) {
-      message.reply('You have already published the roles!');
+      message.reply("You have already published the roles!");
       return;
     }
 
@@ -174,38 +174,38 @@ const PublishRoles: ICommand = {
       dId: newRolesMessage.id,
       channel: targetChannel.id,
       guild: message.guild?.id,
-      type: 'reaction-roles',
+      type: "reaction-roles",
     }).save();
   },
 };
 
 const ListRoles: ICommand = {
-  name: 'list',
-  aliases: ['ls'],
-  description: 'List reaction roles',
+  name: "list",
+  aliases: ["ls"],
+  description: "List reaction roles",
   args: false,
   guildOnly: true,
   async execute(message) {
     const roles = await Role.find({ guild: message.guild?.id });
 
     if (roles.length === 0) {
-      await message.reply('There are no reaction roles!');
+      await message.reply("There are no reaction roles!");
       return;
     }
 
     const rolesStr = roles
       .map((role) => `${role.emoji} - ${role.name}`)
-      .join('\n');
+      .join("\n");
 
     await message.reply(
-      `Here's a list of current reaction roles:\n\n${rolesStr}\n\n`,
+      `Here's a list of current reaction roles:\n\n${rolesStr}\n\n`
     );
   },
 };
 
 const ResetRoles: ICommand = {
-  name: 'reset',
-  description: 'Reset reaction roles',
+  name: "reset",
+  description: "Reset reaction roles",
   args: false,
   guildOnly: true,
   async execute(message) {
@@ -222,19 +222,19 @@ const ResetRoles: ICommand = {
 
     const rolesMessage = await Message.findOne({
       guild: message.guild?.id,
-      type: 'reaction-roles',
+      type: "reaction-roles",
     });
 
     if (rolesMessage) {
       await Message.remove(rolesMessage);
       const channel = (await message.client.channels.fetch(
-        rolesMessage.channel,
+        rolesMessage.channel
       )) as TextChannel;
       const mes = await channel.messages.fetch(rolesMessage.dId);
       mes.delete();
     }
 
-    message.react('✅');
+    message.react("✅");
   },
 };
 
@@ -247,22 +247,25 @@ const Commands = {
 };
 
 const ReactionRoles: ICommand = {
-  name: 'reaction-roles',
-  aliases: ['rr'],
-  description: 'Reaction Roles',
+  name: "reaction-roles",
+  aliases: ["rr"],
+  description: "Reaction Roles",
   guildOnly: true,
   args: true,
-  usage: 'Hello',
-  permissions: 'ADMINISTRATOR',
+  usage: "Hello",
+  permissions: "ADMINISTRATOR",
   subCommands: new Discord.Collection<string, ICommand>(
-    Object.values(Commands).map((command) => [command.name, command]),
+    Object.values(Commands).map((command) => [command.name, command])
   ),
   execute(message, args) {
     const commandName = args?.shift()?.toLowerCase();
     if (commandName === undefined) return;
 
-    const command = this.subCommands!.get(commandName)
-      || this.subCommands!.find((cmd) => (cmd.aliases ? cmd.aliases.includes(commandName) : false));
+    const command =
+      this.subCommands!.get(commandName) ||
+      this.subCommands!.find((cmd) =>
+        cmd.aliases ? cmd.aliases.includes(commandName) : false
+      );
 
     if (!command) return;
 

@@ -1,15 +1,15 @@
-import { ICommand } from './types';
+import { ICommand } from "./types";
 
 const Polls: ICommand = {
-  name: 'poll',
-  description: 'Multi option poll',
+  name: "poll",
+  description: "Multi option poll",
   guildOnly: false,
   args: true,
-  usage: '<question> <answerX>, ...',
+  usage: "<question> <answerX>, ...",
   async execute(message, args) {
     message.delete();
     if (args.length < 3) {
-      message.reply('You need to provide a question and at least two answers!');
+      message.reply("You need to provide a question and at least two answers!");
       return;
     }
 
@@ -19,12 +19,12 @@ const Polls: ICommand = {
     }
 
     const [question, ...answers] = args;
-    const reactions = ['🇦', '🇧', '🇨', '🇩', '🇪', '🇫', '🇬'];
+    const reactions = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬"];
 
     const pollMessage = await message.channel.send(
       `${message.author} asks: "${question}"\n\n${answers
         .map((answer, i) => `${reactions[i]} - ${answer}`)
-        .join('\n')}`,
+        .join("\n")}`
     );
 
     reactions.slice(0, answers.length).forEach(async (reaction) => {
