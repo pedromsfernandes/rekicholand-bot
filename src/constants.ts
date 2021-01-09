@@ -1,3 +1,3 @@
-export const BOT_NAME = "RekichoLand-bot";
-export const PREFIX = "rl";
-export const PROD = process.env.NODE_ENV === "production";
+export const BOT_NAME = 'RekichoLand-bot';
+export const PREFIX = 'rl';
+export const PROD = process.env.NODE_ENV === 'production';

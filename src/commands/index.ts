@@ -1,3 +1,4 @@
 import ReactionRoles from './reactionRoles';
+import Polls from './polls';
 
-export default { ReactionRoles };
+export default { ReactionRoles, Polls };
