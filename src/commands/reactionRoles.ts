@@ -3,7 +3,7 @@ import Discord, { TextChannel } from "discord.js";
 import { PREFIX } from "../constants";
 import { ICommand } from "./types";
 import Role from "../entities/Role";
-import Message from "../entities/Message"; 
+import Message from "../entities/Message";
 
 const updateRolesMessage = async (
   message: Discord.Message,
@@ -24,6 +24,53 @@ const updateRolesMessage = async (
   roles.forEach(({ emoji }) => {
     mes.react(emoji);
   });
+};
+
+const RenameRole: ICommand = {
+  name: "rename",
+  aliases: ["rn"],
+  description: "Rename reaction role",
+  args: true,
+  guildOnly: true,
+  usage: "<old_name> <new_name>",
+  async execute(message, args) {
+    if (args.length !== 2) {
+      message.reply(`You must provide exactly 2 arguments: ${this.usage}`);
+      return;
+    }
+
+    const [oldName, newName] = args;
+
+    const role = await Role.findOne({
+      where: {
+        name: oldName,
+      },
+    });
+
+    if (!role) {
+      message.reply("Role not found!");
+      return;
+    }
+
+    role.name = newName;
+    await role.save();
+
+    const dRole = await message.guild?.roles.fetch(role.dId);
+    await dRole?.setName(newName);
+
+    const rolesMessage = await Message.findOne({
+      where: {
+        guild: message.guild?.id,
+        type: "reaction-roles",
+      },
+    });
+
+    if (rolesMessage) {
+      await updateRolesMessage(message, rolesMessage);
+    }
+
+    message.react("✅");
+  },
 };
 
 const AddRole: ICommand = {
@@ -244,6 +291,7 @@ const Commands = {
   PublishRoles,
   ListRoles,
   ResetRoles,
+  RenameRole,
 };
 
 const ReactionRoles: ICommand = {
