@@ -56,13 +56,6 @@ const removeReactionRole = async (
   }
 };
 
-const onReactionAdd = (
-  messageReaction: MessageReaction,
-  user: User | PartialUser,
-) => {
-  addReactionRole(messageReaction, user);
-};
-
 const onReactionRemove = (
   messageReaction: MessageReaction,
   user: User | PartialUser,
@@ -70,4 +63,4 @@ const onReactionRemove = (
   removeReactionRole(messageReaction, user);
 };
 
-export { onReactionAdd, onReactionRemove };
+export { addReactionRole, onReactionRemove };
