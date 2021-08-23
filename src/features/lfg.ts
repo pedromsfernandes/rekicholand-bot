@@ -23,7 +23,7 @@ const checkIfReadyForGame = async (messageReaction: MessageReaction) => {
     neededReactions += 1;
   }
 
-  if (readyReactions.count >= neededReactions) {
+  if (readyReactions.count === neededReactions) {
     const users = new Set(readyReactions.users.cache.map((u) => `<@${u.id}>`));
     users.add(`<@${message.author.id}>`);
     message.channel.send(`${[...users].join(", ")} Let's go!`);
