@@ -1,3 +1,4 @@
+import { differenceInHours } from "date-fns";
 import { MessageReaction } from "discord.js";
 
 const LFG_MESSAGE = "👀";
@@ -7,7 +8,7 @@ const checkIfReadyForGame = async (messageReaction: MessageReaction) => {
   const { message } = messageReaction;
   let neededReactions = LFG_COUNT;
 
-  if (message.content !== LFG_MESSAGE) return;
+  if (message.content !== LFG_MESSAGE || differenceInHours(message.createdAt, new Date()) >= 2) return;
 
   const readyReactions = message.reactions.cache.find(
     (reaction) => reaction.emoji.name === LFG_MESSAGE
