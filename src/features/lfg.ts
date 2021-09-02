@@ -8,7 +8,7 @@ const checkIfReadyForGame = async (messageReaction: MessageReaction) => {
   const { message } = messageReaction;
   let neededReactions = LFG_COUNT;
 
-  if (message.content !== LFG_MESSAGE || differenceInHours(message.createdAt, new Date()) >= 2) return;
+  if (message.content !== LFG_MESSAGE || differenceInHours(new Date(), message.createdAt) >= 2) return;
 
   const readyReactions = message.reactions.cache.find(
     (reaction) => reaction.emoji.name === LFG_MESSAGE
