@@ -1,4 +1,4 @@
-import Discord, { PermissionString } from 'discord.js';
+import Discord, { PermissionsString } from 'discord.js';
 
 export interface ICommand {
   name: string;
@@ -6,7 +6,7 @@ export interface ICommand {
   args: boolean;
   usage?: string;
   guildOnly: boolean;
-  permissions?: PermissionString;
+  permissions?: PermissionsString;
   aliases?: string[];
   subCommands?: Discord.Collection<string, ICommand>;
   execute: (message: Discord.Message, args: string[]) => void;

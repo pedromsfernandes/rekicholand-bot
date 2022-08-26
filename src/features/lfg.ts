@@ -1,10 +1,10 @@
 import { differenceInHours } from "date-fns";
-import { MessageReaction } from "discord.js";
+import { MessageReaction, PartialMessageReaction } from "discord.js";
 
 const LFG_MESSAGE = "👀";
 const LFG_COUNT = 4;
 
-const checkIfReadyForGame = async (messageReaction: MessageReaction) => {
+const checkIfReadyForGame = async (messageReaction: MessageReaction | PartialMessageReaction) => {
   const { message } = messageReaction;
   let neededReactions = LFG_COUNT;
 
@@ -19,15 +19,15 @@ const checkIfReadyForGame = async (messageReaction: MessageReaction) => {
   }
 
   if (
-    readyReactions.users.cache.find((user) => user.id === message.author.id)
+    readyReactions.users.cache.find((user) => user.id === message.author?.id)
   ) {
     neededReactions += 1;
   }
 
   if (readyReactions.count === neededReactions) {
     const users = new Set(readyReactions.users.cache.map((u) => `<@${u.id}>`));
-    users.add(`<@${message.author.id}>`);
-    message.channel.send(`${[...users].join(", ")} Let's go!`);
+    users.add(`<@${message.author?.id}>`);
+    message.channel.send(`${[...users].join(" ")} Let's go!`);
   }
 };
 

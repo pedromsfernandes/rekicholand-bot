@@ -100,9 +100,7 @@ const AddRole: ICommand = {
 
     const newRole = await message.guild?.roles.create({
       reason: "reaction role",
-      data: {
-        name,
-      },
+      name,
     });
     await Role.create({
       dId: newRole?.id,
@@ -301,7 +299,7 @@ const ReactionRoles: ICommand = {
   guildOnly: true,
   args: true,
   usage: "Hello",
-  permissions: "ADMINISTRATOR",
+  permissions: "Administrator",
   subCommands: new Discord.Collection<string, ICommand>(
     Object.values(Commands).map((command) => [command.name, command])
   ),

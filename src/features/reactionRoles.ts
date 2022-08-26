@@ -1,9 +1,9 @@
-import { MessageReaction, PartialUser, User } from 'discord.js';
+import { MessageReaction, PartialMessageReaction, PartialUser, User } from 'discord.js';
 import Message from '../entities/Message';
 import Role from '../entities/Role';
 
 const addReactionRole = async (
-  messageReaction: MessageReaction,
+  messageReaction: MessageReaction | PartialMessageReaction,
   user: User | PartialUser,
 ) => {
   if (user.bot) return;
@@ -14,7 +14,7 @@ const addReactionRole = async (
   });
 
   if (rolesMessage) {
-    const role = await Role.findOne({ emoji: messageReaction.emoji.name });
+    const role = await Role.findOne({ emoji: messageReaction.emoji.name! });
 
     if (role) {
       const member = await messageReaction.message.guild?.members.fetch(
@@ -30,7 +30,7 @@ const addReactionRole = async (
 };
 
 const removeReactionRole = async (
-  messageReaction: MessageReaction,
+  messageReaction: MessageReaction | PartialMessageReaction,
   user: User | PartialUser,
 ) => {
   if (user.bot) return;
@@ -41,7 +41,7 @@ const removeReactionRole = async (
   });
 
   if (rolesMessage) {
-    const role = await Role.findOne({ emoji: messageReaction.emoji.name });
+    const role = await Role.findOne({ emoji: messageReaction.emoji.name! });
 
     if (role) {
       const member = await messageReaction.message.guild?.members.fetch(
@@ -57,7 +57,7 @@ const removeReactionRole = async (
 };
 
 const onReactionRemove = (
-  messageReaction: MessageReaction,
+  messageReaction: MessageReaction | PartialMessageReaction,
   user: User | PartialUser,
 ) => {
   removeReactionRole(messageReaction, user);

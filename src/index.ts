@@ -1,10 +1,4 @@
-import Discord, {
-  DMChannel,
-  MessageReaction,
-  PartialUser,
-  TextChannel,
-  User,
-} from "discord.js";
+import Discord, { GatewayIntentBits, GuildChannel, TextChannel } from "discord.js";
 import { createConnection } from "typeorm";
 import stringArgv from "string-argv";
 
@@ -31,7 +25,15 @@ const main = async () => {
   });
   await conn.runMigrations();
 
-  const client = new Discord.Client();
+  const client = new Discord.Client({
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
+      GatewayIntentBits.GuildMessageReactions,
+      GatewayIntentBits.GuildVoiceStates,
+    ],
+  });
   const commands = new Discord.Collection<string, ICommand>();
 
   Object.entries(Commands).forEach(([, command]) => {
@@ -52,17 +54,14 @@ const main = async () => {
 
   client.on("voiceStateUpdate", onVoiceStateUpdate);
 
-  client.on(
-    "messageReactionAdd",
-    (messageReaction: MessageReaction, user: User | PartialUser) => {
-      addReactionRole(messageReaction, user);
-      checkIfReadyForGame(messageReaction);
-    }
-  );
+  client.on("messageReactionAdd", (messageReaction, user) => {
+    addReactionRole(messageReaction, user);
+    checkIfReadyForGame(messageReaction);
+  });
 
   client.on("messageReactionRemove", onReactionRemove);
 
-  client.on("message", (message) => {
+  client.on("messageCreate", (message) => {
     if (!message.content.startsWith(PREFIX) || message.author.bot) return;
 
     const args = stringArgv(message.content.slice(PREFIX.length).trim());
@@ -71,19 +70,16 @@ const main = async () => {
     if (commandName === undefined) return;
 
     const command =
-      commands.get(commandName) ||
-      commands.find((cmd) =>
-        cmd.aliases ? cmd.aliases.includes(commandName) : false
-      );
+      commands.get(commandName) || commands.find((cmd) => (cmd.aliases ? cmd.aliases.includes(commandName) : false));
 
     if (!command) return;
 
-    if (command?.guildOnly && message.channel.type === "dm") {
+    if (command?.guildOnly && message.channel.isDMBased()) {
       message.reply("I can't execute that command inside DMs!");
       return;
     }
 
-    if (command?.permissions && !(message.channel instanceof DMChannel)) {
+    if (command?.permissions && message.channel instanceof GuildChannel) {
       const authorPerms = message.channel.permissionsFor(message.author);
       if (!authorPerms || !authorPerms.has(command.permissions)) {
         message.reply("You can not do this!");

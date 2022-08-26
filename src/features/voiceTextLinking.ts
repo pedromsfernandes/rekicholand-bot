@@ -1,4 +1,4 @@
-import Discord, { Channel } from 'discord.js';
+import Discord, { ChannelType, PermissionsBitField } from 'discord.js';
 import { BOT_NAME } from '../constants';
 
 const cleanName = (name: string | undefined) => (name ? name.replace('#', '').replace(' ', '-').toLowerCase() : undefined);
@@ -10,32 +10,31 @@ const onJoinChannel = async (newState: Discord.VoiceState) => {
   if (newState.channel?.members.size === 1) {
     channelRole = await newState.guild.roles.create({
       reason: 'role to access text chat',
-      data: {
-        name,
-      },
+      name,
     });
     const botRole = newState.guild.roles.cache.find(
-      (role) => role.name === BOT_NAME,
+      (role) => role.name.toLowerCase() === BOT_NAME.toLowerCase(),
     );
 
-    const permissionOverwrites:
+    const permissionOverwrites:  
     | Discord.OverwriteResolvable[]
     | Discord.Collection<string, Discord.OverwriteResolvable> = [
-      { id: newState.channel.guild.roles.everyone, deny: 'VIEW_CHANNEL' },
-      { id: channelRole, allow: 'VIEW_CHANNEL' },
+      { id: newState.channel.guild.roles.everyone, deny: [PermissionsBitField.Flags.ViewChannel] },
+      { id: channelRole, allow: [PermissionsBitField.Flags.ViewChannel] },
     ];
 
-    if (botRole) permissionOverwrites.push({ id: botRole, allow: 'VIEW_CHANNEL' });
+    if (botRole) permissionOverwrites.push({ id: botRole, allow: [PermissionsBitField.Flags.ViewChannel] });
 
-    newState.guild.channels.create(name, {
+    newState.guild.channels.create({
+      name,
       reason: 'Voice exclusive text chat',
-      parent: newState.channel.parent as Channel,
-      permissionOverwrites,
+      parent: newState.channel.parent,
+      permissionOverwrites, 
     });
   } else {
     channelRole = newState.guild.roles.cache.find((role) => role.name === name);
   }
-
+ 
   if (channelRole) newState.member?.roles.add(channelRole);
 };
 
@@ -49,7 +48,7 @@ const onLeaveChannel = async (oldState: Discord.VoiceState) => {
   if (oldState.channel?.members.size === 0) {
     await channelRole?.delete();
     const textChannel = oldState.guild.channels.cache.find(
-      (channel) => channel.name === name && channel.isText(),
+      (channel) => channel.name === name && channel.type === ChannelType.GuildText,
     );
     await textChannel?.delete();
   }
@@ -67,11 +66,11 @@ const onVoiceStateUpdate = (
   oldState: Discord.VoiceState,
   newState: Discord.VoiceState,
 ) => {
-  if (newState.channelID === null) {
+  if (newState.channelId === null) {
     onLeaveChannel(oldState);
-  } else if (oldState.channelID === null) {
+  } else if (oldState.channelId === null) {
     onJoinChannel(newState);
-  } else if (oldState.channelID !== newState.channelID) {
+  } else if (oldState.channelId !== newState.channelId) {
     onChangeChannel(oldState, newState);
   }
 };
