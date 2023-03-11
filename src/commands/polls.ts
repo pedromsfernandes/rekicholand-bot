@@ -1,3 +1,4 @@
+import { TextChannel } from "discord.js";
 import { ICommand } from "./types";
 
 const Polls: ICommand = {
@@ -21,7 +22,7 @@ const Polls: ICommand = {
     const [question, ...answers] = args;
     const reactions = ["🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬"];
 
-    const pollMessage = await message.channel.send(
+    const pollMessage = await (message.channel as TextChannel).send(
       `${message.author} asks: "${question}"\n\n${answers
         .map((answer, i) => `${reactions[i]} - ${answer}`)
         .join("\n")}`

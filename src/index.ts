@@ -1,29 +1,19 @@
+require("dotenv").config();
 import Discord, { GatewayIntentBits, GuildChannel, TextChannel } from "discord.js";
-import { createConnection } from "typeorm";
+import { eq } from "drizzle-orm/expressions";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import stringArgv from "string-argv";
-
-import path from "path";
 import Commands from "./commands";
 import { ICommand } from "./commands/types";
-import { PREFIX, PROD } from "./constants";
-import { addReactionRole, onReactionRemove } from "./features/reactionRoles";
-
-import onVoiceStateUpdate from "./features/voiceTextLinking";
-import Message from "./entities/Message";
-import Role from "./entities/Role";
+import { PREFIX } from "./constants";
+import { db } from "./db/client";
+import { messagesTable } from "./db/schema";
 import checkIfReadyForGame from "./features/lfg";
-
-require("dotenv").config();
+import { addReactionRole, onReactionRemove } from "./features/reactionRoles";
+import onVoiceStateUpdate from "./features/voiceTextLinking";
 
 const main = async () => {
-  const conn = await createConnection({
-    type: "postgres",
-    url: process.env.DATABASE_URL,
-    synchronize: !PROD,
-    entities: [Message, Role],
-    migrations: PROD ? [path.join(__dirname, "./migrations/*")] : undefined,
-  });
-  await conn.runMigrations();
+  await migrate(db, { migrationsFolder: "./migrations" });
 
   const client = new Discord.Client({
     intents: [
@@ -41,9 +31,7 @@ const main = async () => {
   });
 
   client.once("ready", async () => {
-    const rolesMessages = await Message.find({
-      where: { type: "reaction-roles" },
-    });
+    const rolesMessages = await db.select().from(messagesTable).where(eq(messagesTable.type, "reaction-roles"));
 
     rolesMessages.forEach(async (message) => {
       const guild = await client.guilds.fetch(message.guild);
